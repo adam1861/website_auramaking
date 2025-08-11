@@ -15,7 +15,8 @@ async function updateCategory(id: string, formData: FormData) {
     const isActive = formData.get('isActive') === 'on'
 
     if (!name || !slug) {
-      throw new Error('Name and slug are required')
+      // Instead of throwing, redirect with error
+      redirect('/admin/categories?error=Name and slug are required')
     }
 
     const file = formData.get('imageFile') as File | null
@@ -42,11 +43,11 @@ async function updateCategory(id: string, formData: FormData) {
     })
     
     revalidatePath('/admin/categories')
-    redirect('/admin/categories')
+    redirect('/admin/categories?success=Category updated successfully')
   } catch (error) {
     console.error('Category update error:', error)
-    // In production, you might want to redirect to an error page
-    throw error
+    // Redirect with error instead of throwing
+    redirect('/admin/categories?error=Failed to update category')
   }
 }
 
@@ -56,22 +57,22 @@ async function deleteCategory(id: string) {
   try {
     const productCount = await prisma.product.count({ where: { categoryId: id } })
     if (productCount > 0) {
-      throw new Error('Cannot delete a category that has products')
+      redirect('/admin/categories?error=Cannot delete a category that has products')
     }
     
     await prisma.category.delete({ where: { id } })
     revalidatePath('/admin/categories')
-    redirect('/admin/categories')
+    redirect('/admin/categories?success=Category deleted successfully')
   } catch (error) {
     console.error('Category deletion error:', error)
-    // In production, you might want to redirect to an error page
-    throw error
+    redirect('/admin/categories?error=Failed to delete category')
   }
 }
 
 export default async function EditCategoryPage({ params }: { params: { id: string } }) {
   const category = await prisma.category.findUnique({ where: { id: params.id } })
   if (!category) return notFound()
+  
   return (
     <section className="space-y-6 max-w-2xl">
       <div className="flex items-center justify-between">

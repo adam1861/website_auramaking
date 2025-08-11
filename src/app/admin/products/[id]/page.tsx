@@ -23,7 +23,7 @@ async function updateProduct(id: string, formData: FormData) {
     const isFeatured = formData.get('isFeatured') === 'on'
 
     if (!name || !slug || !price || !categoryId) {
-      throw new Error('Name, slug, price and category are required')
+      redirect('/admin/products?error=Name, slug, price and category are required')
     }
 
     const file = formData.get('imageFile') as File | null
@@ -87,10 +87,10 @@ async function updateProduct(id: string, formData: FormData) {
     })
 
     revalidatePath('/admin/products')
-    redirect('/admin/products')
+    redirect('/admin/products?success=Product updated successfully')
   } catch (error) {
     console.error('Product update error:', error)
-    throw error
+    redirect('/admin/products?error=Failed to update product')
   }
 }
 
@@ -102,10 +102,10 @@ async function deleteProduct(id: string) {
     await prisma.cartItem.deleteMany({ where: { productId: id } })
     await prisma.product.delete({ where: { id } })
     revalidatePath('/admin/products')
-    redirect('/admin/products')
+    redirect('/admin/products?success=Product deleted successfully')
   } catch (error) {
     console.error('Product deletion error:', error)
-    throw error
+    redirect('/admin/products?error=Failed to delete product')
   }
 }
 
@@ -122,7 +122,7 @@ async function addVariant(productId: string, formData: FormData) {
     revalidatePath(`/admin/products/${productId}`)
   } catch (error) {
     console.error('Variant creation error:', error)
-    throw error
+    // Don't redirect here as it's a nested form
   }
 }
 
