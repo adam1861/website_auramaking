@@ -1,8 +1,7 @@
 import '@/styles/globals.css'
 import { prisma } from '@/lib/db'
 import { unstable_noStore as noStore } from 'next/cache'
-import dynamic from 'next/dynamic'
-const HeaderNav = dynamic(() => import('@/components/HeaderNav'), { ssr: false })
+import HeaderNav from '@/components/HeaderNav'
 
 export const metadata = {
   title: 'Auramking — 3D Printing by Auramaking',
@@ -12,6 +11,7 @@ export const metadata = {
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   noStore()
   const categories = await prisma.category.findMany({ where: { isActive: true }, orderBy: { name: 'asc' } })
+  
   // Map slugs to theme hues
   const slugToTheme: Record<string, string> = {
     anime: 'text-emerald-700',

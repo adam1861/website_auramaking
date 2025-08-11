@@ -53,7 +53,11 @@ export default function HeaderNav({ categories }: { categories: Category[] }) {
         </Link>
         <nav className={`flex flex-wrap gap-4 items-center text-sm`}>
           {categories.map(c => (
-            <Link key={c.id} href={`/categories/${c.slug}`} className={`${theme.themeClass}`}>
+            <Link 
+              key={c.id} 
+              href={`/categories/${c.slug}`} 
+              className="text-gray-700 hover:text-brand-600 font-medium px-3 py-2 rounded-md hover:bg-gray-100 transition-colors"
+            >
               {c.name}
             </Link>
           ))}
