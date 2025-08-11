@@ -9,7 +9,7 @@ export default async function HomePage() {
     <section className="space-y-8">
       <div
         className="relative left-1/2 right-1/2 -mx-[50vw] w-screen bg-cover bg-center bg-no-repeat min-h-[85vh] py-24 md:py-36"
-        style={{ backgroundImage: "url(/uploads/home.png)" }}
+        style={{ backgroundImage: "url(/home.png)" }}
       >
         <div className="container">
           <h1 className="text-3xl font-bold mb-3 text-black">Auramking Store</h1>

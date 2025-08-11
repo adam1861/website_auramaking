@@ -10,7 +10,7 @@ type ProductWithCategory = Product & { category: Category }  // ⬅ helper type
 export default async function AdminProducts({ 
   searchParams 
 }: { 
-  searchParams: { error?: string; success?: string } 
+  searchParams?: { error?: string; success?: string } 
 }) {
   if (!isAdminAuthenticated()) redirect('/admin/login')
   const products: ProductWithCategory[] = await prisma.product.findMany({
@@ -24,12 +24,12 @@ export default async function AdminProducts({
       </div>
       
       {/* Error and Success Messages */}
-      {searchParams.error && (
+      {searchParams?.error && (
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
           {searchParams.error}
         </div>
       )}
-      {searchParams.success && (
+      {searchParams?.success && (
         <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg">
           {searchParams.success}
         </div>

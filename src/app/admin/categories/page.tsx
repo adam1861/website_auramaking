@@ -7,7 +7,7 @@ import type { Category } from '@prisma/client'
 export default async function AdminCategories({ 
   searchParams 
 }: { 
-  searchParams: { error?: string; success?: string } 
+  searchParams?: { error?: string; success?: string } 
 }) {
   if (!isAdminAuthenticated()) redirect('/admin/login')
   
@@ -21,12 +21,12 @@ export default async function AdminCategories({
       </div>
       
       {/* Error and Success Messages */}
-      {searchParams.error && (
+      {searchParams?.error && (
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
           {searchParams.error}
         </div>
       )}
-      {searchParams.success && (
+      {searchParams?.success && (
         <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg">
           {searchParams.success}
         </div>
