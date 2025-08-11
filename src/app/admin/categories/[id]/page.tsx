@@ -55,12 +55,21 @@ async function deleteCategory(id: string) {
   'use server'
   
   try {
+    // Check if category exists
+    const category = await prisma.category.findUnique({ where: { id } })
+    if (!category) {
+      redirect('/admin/categories?error=Category not found')
+    }
+    
     const productCount = await prisma.product.count({ where: { categoryId: id } })
     if (productCount > 0) {
       redirect('/admin/categories?error=Cannot delete a category that has products')
     }
     
+    // Delete the category
     await prisma.category.delete({ where: { id } })
+    
+    // Revalidate and redirect
     revalidatePath('/admin/categories')
     redirect('/admin/categories?success=Category deleted successfully')
   } catch (error) {
@@ -77,8 +86,18 @@ export default async function EditCategoryPage({ params }: { params: { id: strin
     <section className="space-y-6 max-w-2xl">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Edit Category</h1>
-        <form action={deleteCategory.bind(null, category.id)}>
-          <button type="submit" className="px-3 py-2 border rounded-lg text-red-600 border-red-300">Delete</button>
+        <form action={deleteCategory.bind(null, category.id)} method="POST">
+          <button 
+            type="submit" 
+            className="px-3 py-2 border rounded-lg text-red-600 border-red-300 hover:bg-red-50"
+            onClick={(e) => {
+              if (!confirm('Are you sure you want to delete this category? This action cannot be undone.')) {
+                e.preventDefault()
+              }
+            }}
+          >
+            Delete
+          </button>
         </form>
       </div>
       <form action={updateCategory.bind(null, category.id)} className="space-y-4" encType="multipart/form-data">

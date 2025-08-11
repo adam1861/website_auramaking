@@ -98,9 +98,19 @@ async function deleteProduct(id: string) {
   'use server'
   
   try {
+    // Check if product exists
+    const product = await prisma.product.findUnique({ where: { id } })
+    if (!product) {
+      redirect('/admin/products?error=Product not found')
+    }
+    
     // Ensure dependent cart items are removed before deleting product (DB FK may not be CASCADE yet)
     await prisma.cartItem.deleteMany({ where: { productId: id } })
+    
+    // Delete the product
     await prisma.product.delete({ where: { id } })
+    
+    // Revalidate and redirect
     revalidatePath('/admin/products')
     redirect('/admin/products?success=Product deleted successfully')
   } catch (error) {
@@ -153,8 +163,18 @@ export default async function EditProductPage({ params }: { params: { id: string
     <section className="space-y-6 max-w-2xl">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Edit Product</h1>
-        <form action={deleteProduct.bind(null, product.id)}>
-          <button type="submit" className="px-3 py-2 border rounded-lg text-red-600 border-red-300">Delete</button>
+        <form action={deleteProduct.bind(null, product.id)} method="POST">
+          <button 
+            type="submit" 
+            className="px-3 py-2 border rounded-lg text-red-600 border-red-300 hover:bg-red-50"
+            onClick={(e) => {
+              if (!confirm('Are you sure you want to delete this product? This action cannot be undone.')) {
+                e.preventDefault()
+              }
+            }}
+          >
+            Delete
+          </button>
         </form>
       </div>
       <form action={updateProduct.bind(null, product.id)} className="space-y-4" encType="multipart/form-data">
