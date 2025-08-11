@@ -1,0 +1,22 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Make the SVG wordmark inherit text color */
+img[alt="Auramaking"], svg[aria-label="Auramaking"] { color: inherit; }
+
+/* Utility buttons if tailwind plugin classes aren't present */
+.btn { @apply inline-flex items-center gap-2 rounded-lg px-4 py-2 transition; }
+.btn-primary { @apply bg-brand text-white hover:opacity-90; }
+.btn-outline { @apply border border-brand text-brand hover:bg-brand/10; }
+
+:root { --brand: #10B981; }
+body { @apply bg-white text-gray-900 dark:bg-gray-950 dark:text-gray-100 antialiased; }
+a { @apply text-brand-700 hover:text-brand-600 hover:underline; }
+.container { @apply max-w-6xl mx-auto px-4; }
+
+/* Cards */
+.card { @apply rounded-2xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow bg-white; }
+.btn { @apply inline-flex items-center justify-center rounded-lg px-4 py-2 font-medium; }
+.btn-primary { @apply bg-brand text-white hover:bg-brand-600; }
+.btn-outline { @apply border border-gray-300 hover:border-brand-400 text-gray-700 hover:text-brand-700; }
