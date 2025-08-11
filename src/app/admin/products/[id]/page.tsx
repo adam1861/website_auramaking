@@ -7,95 +7,123 @@ import path from 'path'
 
 async function updateProduct(id: string, formData: FormData) {
   'use server'
-  const name = (formData.get('name') || '').toString().trim()
-  const slug = (formData.get('slug') || '').toString().trim()
-  const price = Number(formData.get('price') || 0)
-  const description = (formData.get('description') || '').toString().trim() || null
-  const material = (formData.get('material') || '').toString().trim() || null
-  const color = (formData.get('color') || '').toString().trim() || null
-  const scale = (formData.get('scale') || '').toString().trim() || null
-  const categoryId = (formData.get('categoryId') || '').toString().trim()
-  let imageUrl = (formData.get('imageUrl') || '').toString().trim()
-  let backgroundImageUrl = (formData.get('backgroundImageUrl') || '').toString().trim()
-  const isActive = formData.get('isActive') === 'on'
-  const isFeatured = formData.get('isFeatured') === 'on'
+  
+  try {
+    const name = (formData.get('name') || '').toString().trim()
+    const slug = (formData.get('slug') || '').toString().trim()
+    const price = Number(formData.get('price') || 0)
+    const description = (formData.get('description') || '').toString().trim() || null
+    const material = (formData.get('material') || '').toString().trim() || null
+    const color = (formData.get('color') || '').toString().trim() || null
+    const scale = (formData.get('scale') || '').toString().trim() || null
+    const categoryId = (formData.get('categoryId') || '').toString().trim()
+    let imageUrl = (formData.get('imageUrl') || '').toString().trim()
+    let backgroundImageUrl = (formData.get('backgroundImageUrl') || '').toString().trim()
+    const isActive = formData.get('isActive') === 'on'
+    const isFeatured = formData.get('isFeatured') === 'on'
 
-  const file = formData.get('imageFile') as File | null
-  if (file && file.size > 0) {
-    const arrayBuffer = await file.arrayBuffer()
-    const buffer = Buffer.from(arrayBuffer)
-    const uploadDir = path.join(process.cwd(), 'public', 'uploads')
-    await fs.mkdir(uploadDir, { recursive: true })
-    const ext = path.extname(file.name) || '.png'
-    const fileName = `${Date.now()}-${slug}${ext}`
-    const fullPath = path.join(uploadDir, fileName)
-    await fs.writeFile(fullPath, buffer)
-    imageUrl = `/uploads/${fileName}`
-  }
-
-  const backgroundFile = formData.get('backgroundImageFile') as File | null
-  if (backgroundFile && backgroundFile.size > 0) {
-    const arrayBuffer = await backgroundFile.arrayBuffer()
-    const buffer = Buffer.from(arrayBuffer)
-    const uploadDir = path.join(process.cwd(), 'public', 'uploads')
-    await fs.mkdir(uploadDir, { recursive: true })
-    const ext = path.extname(backgroundFile.name) || '.png'
-    const fileName = `bg-${Date.now()}-${slug}${ext}`
-    const fullPath = path.join(uploadDir, fileName)
-    await fs.writeFile(fullPath, buffer)
-    backgroundImageUrl = `/uploads/${fileName}`
-  }
-
-  if (!name || !slug || !price || !categoryId) {
-    throw new Error('Name, slug, price and category are required')
-  }
-
-  await prisma.product.update({
-    where: { id },
-    data: {
-      name,
-      slug,
-      price: Math.round(price),
-      description: description || undefined,
-      material: material || undefined,
-      color: color || undefined,
-      scale: scale || undefined,
-      categoryId,
-      backgroundImageUrl: backgroundImageUrl || undefined,
-      isActive,
-      isFeatured,
-      // Keep it simple: if imageUrl provided, replace first image by deleting all and creating one
-      images: imageUrl
-        ? {
-            deleteMany: {},
-            create: [{ url: imageUrl, alt: name }],
-          }
-        : undefined,
+    if (!name || !slug || !price || !categoryId) {
+      throw new Error('Name, slug, price and category are required')
     }
-  })
 
-  revalidatePath('/admin/products')
-  redirect('/admin/products')
+    const file = formData.get('imageFile') as File | null
+    if (file && file.size > 0) {
+      try {
+        const arrayBuffer = await file.arrayBuffer()
+        const buffer = Buffer.from(arrayBuffer)
+        const uploadDir = path.join(process.cwd(), 'public', 'uploads')
+        await fs.mkdir(uploadDir, { recursive: true })
+        const ext = path.extname(file.name) || '.png'
+        const fileName = `${Date.now()}-${slug}${ext}`
+        const fullPath = path.join(uploadDir, fileName)
+        await fs.writeFile(fullPath, buffer)
+        imageUrl = `/uploads/${fileName}`
+      } catch (fileError) {
+        console.error('Product image upload error:', fileError)
+        // Continue without file upload if it fails
+      }
+    }
+
+    const backgroundFile = formData.get('backgroundImageFile') as File | null
+    if (backgroundFile && backgroundFile.size > 0) {
+      try {
+        const arrayBuffer = await backgroundFile.arrayBuffer()
+        const buffer = Buffer.from(arrayBuffer)
+        const uploadDir = path.join(process.cwd(), 'public', 'uploads')
+        await fs.mkdir(uploadDir, { recursive: true })
+        const ext = path.extname(backgroundFile.name) || '.png'
+        const fileName = `bg-${Date.now()}-${slug}${ext}`
+        const fullPath = path.join(uploadDir, fileName)
+        await fs.writeFile(fullPath, buffer)
+        backgroundImageUrl = `/uploads/${fileName}`
+      } catch (fileError) {
+        console.error('Background image upload error:', fileError)
+        // Continue without file upload if it fails
+      }
+    }
+
+    await prisma.product.update({
+      where: { id },
+      data: {
+        name,
+        slug,
+        price: Math.round(price),
+        description: description || undefined,
+        material: material || undefined,
+        color: color || undefined,
+        scale: scale || undefined,
+        categoryId,
+        backgroundImageUrl: backgroundImageUrl || undefined,
+        isActive,
+        isFeatured,
+        // Keep it simple: if imageUrl provided, replace first image by deleting all and creating one
+        images: imageUrl
+          ? {
+              deleteMany: {},
+              create: [{ url: imageUrl, alt: name }],
+            }
+          : undefined,
+      }
+    })
+
+    revalidatePath('/admin/products')
+    redirect('/admin/products')
+  } catch (error) {
+    console.error('Product update error:', error)
+    throw error
+  }
 }
 
 async function deleteProduct(id: string) {
   'use server'
-  // Ensure dependent cart items are removed before deleting product (DB FK may not be CASCADE yet)
-  await prisma.cartItem.deleteMany({ where: { productId: id } })
-  await prisma.product.delete({ where: { id } })
-  revalidatePath('/admin/products')
-  redirect('/admin/products')
+  
+  try {
+    // Ensure dependent cart items are removed before deleting product (DB FK may not be CASCADE yet)
+    await prisma.cartItem.deleteMany({ where: { productId: id } })
+    await prisma.product.delete({ where: { id } })
+    revalidatePath('/admin/products')
+    redirect('/admin/products')
+  } catch (error) {
+    console.error('Product deletion error:', error)
+    throw error
+  }
 }
 
 async function addVariant(productId: string, formData: FormData) {
   'use server'
-  const name = (formData.get('v_name') || '').toString().trim()
-  const sku = (formData.get('v_sku') || '').toString().trim() || null
-  const priceOverride = formData.get('v_price') ? Number(formData.get('v_price')) : null
-  const stock = Number(formData.get('v_stock') || 0)
-  if (!name) return
-  await prisma.productVariant.create({ data: { productId, name, sku, priceOverride: priceOverride ?? null, stock } })
-  revalidatePath(`/admin/products/${productId}`)
+  
+  try {
+    const name = (formData.get('v_name') || '').toString().trim()
+    const sku = (formData.get('v_sku') || '').toString().trim() || null
+    const priceOverride = formData.get('v_price') ? Number(formData.get('v_price')) : null
+    const stock = Number(formData.get('v_stock') || 0)
+    if (!name) return
+    await prisma.productVariant.create({ data: { productId, name, sku, priceOverride: priceOverride ?? null, stock } })
+    revalidatePath(`/admin/products/${productId}`)
+  } catch (error) {
+    console.error('Variant creation error:', error)
+    throw error
+  }
 }
 
 async function updateVariant(productId: string, variantId: string, formData: FormData) {

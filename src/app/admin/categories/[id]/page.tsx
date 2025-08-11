@@ -6,45 +6,67 @@ import path from 'path'
 
 async function updateCategory(id: string, formData: FormData) {
   'use server'
-  const name = (formData.get('name') || '').toString().trim()
-  const slug = (formData.get('slug') || '').toString().trim()
-  const description = (formData.get('description') || '').toString().trim() || null
-  let imageUrl = (formData.get('imageUrl') || '').toString().trim() || null
-  const isActive = formData.get('isActive') === 'on'
+  
+  try {
+    const name = (formData.get('name') || '').toString().trim()
+    const slug = (formData.get('slug') || '').toString().trim()
+    const description = (formData.get('description') || '').toString().trim() || null
+    let imageUrl = (formData.get('imageUrl') || '').toString().trim() || null
+    const isActive = formData.get('isActive') === 'on'
 
-  const file = formData.get('imageFile') as File | null
-  if (file && file.size > 0) {
-    const arrayBuffer = await file.arrayBuffer()
-    const buffer = Buffer.from(arrayBuffer)
-    const uploadDir = path.join(process.cwd(), 'public', 'uploads')
-    await fs.mkdir(uploadDir, { recursive: true })
-    const ext = path.extname(file.name) || '.png'
-    const fileName = `${Date.now()}-${slug}${ext}`
-    const fullPath = path.join(uploadDir, fileName)
-    await fs.writeFile(fullPath, buffer)
-    imageUrl = `/uploads/${fileName}`
-  }
+    if (!name || !slug) {
+      throw new Error('Name and slug are required')
+    }
 
-  if (!name || !slug) {
-    throw new Error('Name and slug are required')
+    const file = formData.get('imageFile') as File | null
+    if (file && file.size > 0) {
+      try {
+        const arrayBuffer = await file.arrayBuffer()
+        const buffer = Buffer.from(arrayBuffer)
+        const uploadDir = path.join(process.cwd(), 'public', 'uploads')
+        await fs.mkdir(uploadDir, { recursive: true })
+        const ext = path.extname(file.name) || '.png'
+        const fileName = `${Date.now()}-${slug}${ext}`
+        const fullPath = path.join(uploadDir, fileName)
+        await fs.writeFile(fullPath, buffer)
+        imageUrl = `/uploads/${fileName}`
+      } catch (fileError) {
+        console.error('File upload error:', fileError)
+        // Continue without file upload if it fails
+      }
+    }
+
+    await prisma.category.update({
+      where: { id },
+      data: { name, slug, description: description || undefined, imageUrl: imageUrl || undefined, isActive }
+    })
+    
+    revalidatePath('/admin/categories')
+    redirect('/admin/categories')
+  } catch (error) {
+    console.error('Category update error:', error)
+    // In production, you might want to redirect to an error page
+    throw error
   }
-  await prisma.category.update({
-    where: { id },
-    data: { name, slug, description: description || undefined, imageUrl: imageUrl || undefined, isActive }
-  })
-  revalidatePath('/admin/categories')
-  redirect('/admin/categories')
 }
 
 async function deleteCategory(id: string) {
   'use server'
-  const productCount = await prisma.product.count({ where: { categoryId: id } })
-  if (productCount > 0) {
-    throw new Error('Cannot delete a category that has products')
+  
+  try {
+    const productCount = await prisma.product.count({ where: { categoryId: id } })
+    if (productCount > 0) {
+      throw new Error('Cannot delete a category that has products')
+    }
+    
+    await prisma.category.delete({ where: { id } })
+    revalidatePath('/admin/categories')
+    redirect('/admin/categories')
+  } catch (error) {
+    console.error('Category deletion error:', error)
+    // In production, you might want to redirect to an error page
+    throw error
   }
-  await prisma.category.delete({ where: { id } })
-  revalidatePath('/admin/categories')
-  redirect('/admin/categories')
 }
 
 export default async function EditCategoryPage({ params }: { params: { id: string } }) {
