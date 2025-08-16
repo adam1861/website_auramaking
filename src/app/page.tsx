@@ -4,7 +4,19 @@ import { unstable_noStore as noStore } from 'next/cache'
 
 export default async function HomePage() {
   noStore()
-  const categories = await prisma.category.findMany({ where: { isActive: true }, orderBy: { name: 'asc' } })
+  
+  let categories = []
+  try {
+    categories = await prisma.category.findMany({ where: { isActive: true }, orderBy: { name: 'asc' } })
+  } catch (error) {
+    console.error('Failed to load categories:', error)
+    // Use fallback categories
+    categories = [
+      { id: '1', name: 'Anime Figures', slug: 'anime', isActive: true, createdAt: new Date(), updatedAt: new Date() },
+      { id: '2', name: 'Decorations', slug: 'decorations', isActive: true, createdAt: new Date(), updatedAt: new Date() },
+      { id: '3', name: 'Board Games', slug: 'board-games', isActive: true, createdAt: new Date(), updatedAt: new Date() }
+    ]
+  }
   return (
     <section className="space-y-8">
       <div
